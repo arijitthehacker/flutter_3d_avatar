@@ -33,6 +33,17 @@ class _MyHomePageState extends State<MyHomePage> {
   Flutter3DController controller = Flutter3DController();
   String? chosenAnimation;
   String? chosenTexture;
+  final TextEditingController _textEditingController = TextEditingController();
+  final String defaultAnimation = 'Rig|cycle_talking';
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      controller.playAnimation(animationName: defaultAnimation);
+    });
+    // controller.playAnimation(animationName: 'Rig|cycle_talking');
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -87,14 +98,9 @@ class _MyHomePageState extends State<MyHomePage> {
           const SizedBox(
             height: 4,
           ),
-
-          const SizedBox(
-            height: 4,
-          ),
           FloatingActionButton.small(
             onPressed: () {
               controller.setCameraOrbit(20, 20, 25);
-              //controller.setCameraTarget(0.3, 0.2, 0.4);
             },
             child: const Icon(Icons.camera_alt),
           ),
@@ -104,24 +110,49 @@ class _MyHomePageState extends State<MyHomePage> {
           FloatingActionButton.small(
             onPressed: () {
               controller.resetCameraOrbit();
-              //controller.resetCameraTarget();
             },
             child: const Icon(Icons.cameraswitch_outlined),
           )
         ],
       ),
-      body: Container(
-        color: Colors.grey,
-        width: MediaQuery.of(context).size.width,
-        height: MediaQuery.of(context).size.height,
-        child: Flutter3DViewer(
-          //If you don't pass progressBarColor the color of defaultLoadingProgressBar will be grey.
-          //You can set your custom color or use [Colors.transparent] for hiding loadingProgressBar.
-          progressBarColor: Colors.blue,
-          controller: controller,
-          src: 'assets/business_man.glb',
-          //src: 'assets/sheen_chair.glb',
-        ),
+      body: Column(
+        children: [
+          Expanded(
+            child: Container(
+              color: Colors.grey,
+              width: MediaQuery.of(context).size.width,
+              child: Flutter3DViewer(
+                progressBarColor: Colors.blue,
+                controller: controller,
+                src: 'assets/sadhu_sitting_idle.fbx.fbx',
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _textEditingController,
+                    decoration: const InputDecoration(
+                      hintText: 'Enter command',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.send),
+                  onPressed: () {
+                    String command = _textEditingController.text.trim();
+                    _handleCommand(command);
+                    _textEditingController.clear();
+                  },
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -168,5 +199,28 @@ class _MyHomePageState extends State<MyHomePage> {
             ),
           );
         });
+  }
+
+  void _handleCommand(String command) {
+    if (command.startsWith('play ')) {
+      String animationName = command.substring(5);
+      controller.playAnimation(animationName: animationName);
+    } else if (command == 'pause') {
+      controller.pauseAnimation();
+    } else if (command == 'reset') {
+      controller.resetAnimation();
+    } else if (command.startsWith('camera orbit ')) {
+      List<String> parts = command.split(' ');
+      if (parts.length == 4) {
+        double x = double.parse(parts[2]);
+        double y = double.parse(parts[3]);
+        double z = double.parse(parts[4]);
+        controller.setCameraOrbit(x, y, z);
+      }
+    } else if (command == 'reset camera') {
+      controller.resetCameraOrbit();
+    } else {
+      print('Unknown command: $command');
+    }
   }
 }
